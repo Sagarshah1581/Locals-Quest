@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local's Quest - Discover your next quest</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .leaflet-popup-content-wrapper { border-radius: 1rem; padding: 0.25rem; }
+    
+    /* Custom SVG Teardrop Pin styling */
+    .custom-pin-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: #4f46e5;
+      color: white;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    .custom-pin-marker:hover {
+      background: #4338ca;
+      transform: rotate(-45deg) scale(1.15);
+    }
+    .custom-pin-marker span {
+      transform: rotate(45deg);
+      font-size: 15px;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased">
+
+  <!-- Mobile-first App Frame (Expands gracefully on Tablet/Desktop) -->
+  <div class="max-w-md mx-auto min-h-screen bg-white shadow-xl relative flex flex-col pb-16 md:max-w-xl lg:max-w-2xl border-x border-slate-200">
+
+    <!-- ==================== HEADER (Updated Brand & Tagline) ==================== -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <!-- Back button (wireframe ←) -->
+      <button id="back-btn" onclick="showView('list')" class="hidden mr-2 p-1.5 rounded-full hover:bg-slate-100 text-slate-700 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </button>
+
+      <!-- Logo & Tagline -->
+      <div id="brand-header" class="flex-1 cursor-pointer" onclick="showView('list')">
+        <h1 class="text-xl font-black tracking-tight text-indigo-600 flex items-center gap-1.5">
+          <span>Local's Quest</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </h1>
+        <p class="text-[10px] text-slate-400 font-semibold tracking-wide uppercase">Discover your next quest</p>
+      </div>
+
+      <!-- Location Pill & Profile -->
+      <div class="flex items-center gap-2">
+        <button onclick="showView('map')" class="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-full text-xs font-semibold text-slate-700 transition" title="Center Map">
+          <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span id="current-location-text">Ontario, CA</span>
+        </button>
+
+        <div class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+          A
+        </div>
+
+        <button onclick="alert('Local\'s Quest Directory:\n• Curated Regional Experiences\n• Exact Address Pinpoint\n• Verified Seasonal Data')" class="p-1 text-slate-600 hover:text-slate-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== VIEW SWITCHER (List vs Map) ==================== -->
+    <div id="tab-nav" class="px-4 pt-3 pb-1 bg-white flex items-center justify-between">
+      <div class="flex bg-slate-100 p-1 rounded-xl w-full text-sm font-semibold">
+        <button id="list-tab-btn" onclick="showView('list')" class="flex-1 py-1.5 rounded-lg bg-white shadow-sm text-indigo-600 flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          List View
+        </button>
+        <button id="map-tab-btn" onclick="showView('map')" class="flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          Map View
+        </button>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SCREEN 1: DISCOVERY / LIST VIEW                                -->
+    <!-- ============================================================== -->
+    <main id="list-view" class="flex-1 flex flex-col">
+
+      <!-- PROMOTION PANEL CAROUSEL -->
+      <section class="p-4">
+        <div class="relative overflow-hidden rounded-2xl bg-slate-900 text-white shadow-lg h-56">
+          <div id="promo-carousel-inner" class="h-full flex transition-transform duration-500 ease-out"></div>
+          <div id="promo-dots" class="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10"></div>
+        </div>
+      </section>
+
+      <!-- SEARCH BAR + FILTER (≡) & SORT (↓↑) BUTTONS -->
+      <section class="px-4 mb-4 relative z-20">
+        <div class="flex items-center gap-2">
+          
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="Search quests, orchards, regions, addresses..." 
+              oninput="handleSearch(this.value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            >
+            <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          
+          <!-- Filter Button (Wireframe: ≡) -->
+          <button 
+            id="filter-btn"
+            onclick="openFilterModal()" 
+            title="Open Filters" 
+            class="relative px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0"
+          >
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M7 12h10M10 18h4"/></svg>
+            <span class="hidden sm:inline">Filters</span>
+            <span id="filter-badge" class="hidden w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-black items-center justify-center">0</span>
+          </button>
+
+          <!-- Sort Button (Wireframe: ↓↑) -->
+          <div class="relative">
+            <button 
+              id="sort-btn"
+              onclick="toggleSortMenu()" 
+              title="Sort Options" 
+              class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0"
+            >
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span id="sort-current-label" class="hidden sm:inline">Sort</span>
+            </button>
+
+            <!-- Sort Dropdown Menu -->
+            <div id="sort-menu" class="hidden absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+              <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sort By</div>
+              <button onclick="setSortOption('recommended')" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between">
+                <span>Featured / Curated</span>
+                <span class="sort-check" id="check-recommended">✓</span>
+              </button>
+              <button onclick="setSortOption('price-asc')" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between">
+                <span>Price: Low to High</span>
+                <span class="sort-check hidden" id="check-price-asc">✓</span>
+              </button>
+              <button onclick="setSortOption('price-desc')" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between">
+                <span>Price: High to Low</span>
+                <span class="sort-check hidden" id="check-price-desc">✓</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Category Chips -->
+        <div class="flex gap-2 overflow-x-auto hide-scrollbar pt-3 text-xs font-semibold">
+          <button onclick="quickFilterCategory('All')" class="cat-pill px-3.5 py-1.5 rounded-full bg-indigo-600 text-white shrink-0">All</button>
+          <button onclick="quickFilterCategory('Outdoors & Nature')" class="cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">🌲 Outdoors & Nature</button>
+          <button onclick="quickFilterCategory('Farm & Harvest')" class="cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">🎃 Farm & Harvest</button>
+          <button onclick="quickFilterCategory('Wine & Cider')" class="cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">🍷 Wine & Cider</button>
+          <button onclick="quickFilterCategory('Winter & Skating')" class="cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0">⛸️ Winter & Skating</button>
+        </div>
+      </section>
+
+      <!-- Active Filter Status -->
+      <div class="px-4 mb-2 flex items-center justify-between text-xs text-slate-400 font-medium">
+        <span id="result-count">Showing quests</span>
+        <button id="clear-all-link" onclick="resetAllFilters()" class="hidden text-indigo-600 font-bold hover:underline">Reset filters</button>
+      </div>
+
+      <!-- WIREFRAME RAIL 1: OUTDOORS & NATURE -->
+      <section id="section-outdoors" class="mb-5">
+        <div class="px-4 flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+            <span>🌲 Outdoors & Nature Quests</span>
+          </h2>
+          <span class="text-xs text-indigo-600 font-semibold cursor-pointer hover:underline" onclick="quickFilterCategory('Outdoors & Nature')">See category</span>
+        </div>
+        <div id="outdoors-rail" class="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-2"></div>
+      </section>
+
+      <!-- WIREFRAME RAIL 2: FARM & HARVEST FESTIVALS -->
+      <section id="section-farm" class="mb-6">
+        <div class="px-4 flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+            <span>🎃 Harvest Festivals & Orchards</span>
+          </h2>
+          <span class="text-xs text-indigo-600 font-semibold cursor-pointer hover:underline" onclick="quickFilterCategory('Farm & Harvest')">See category</span>
+        </div>
+        <div id="farm-rail" class="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-2"></div>
+      </section>
+
+      <!-- FULL DISCOVERY LIST -->
+      <section class="px-4 mb-8">
+        <h2 class="text-base font-bold text-slate-900 tracking-tight mb-3">📍 All Local Quests (Halton, Peel, Durham, Niagara)</h2>
+        <div id="all-experiences-list" class="space-y-3"></div>
+      </section>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- SCREEN 2: INTERACTIVE MAP VIEW                                 -->
+    <!-- ============================================================== -->
+    <main id="map-view" class="hidden flex-1 relative flex flex-col w-full" style="min-height: 550px;">
+      
+      <div class="p-3 bg-white border-b border-slate-100 flex items-center justify-between z-20">
+        <span id="map-spots-count" class="text-xs font-bold text-slate-700">📍 Showing 10 locations</span>
+        <button onclick="resetMapViewBounds()" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+          Fit All Pins
+        </button>
+      </div>
+
+      <div id="leaflet-map" style="height: 72vh; min-height: 520px; width: 100%;" class="z-10 bg-slate-100"></div>
+      
+      <div id="map-preview-card" class="hidden absolute bottom-4 left-4 right-4 z-30 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-3.5 border border-slate-200 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200"></div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- SCREEN 3: DETAIL VIEW                                          -->
+    <!-- ============================================================== -->
+    <main id="detail-view" class="hidden flex-1 flex flex-col pb-8">
+      
+      <!-- Photo Carousel -->
+      <div class="relative bg-slate-900 h-64 overflow-hidden group">
+        <div id="detail-photo-slider" class="h-full flex transition-transform duration-300"></div>
+        
+        <button onclick="prevDetailSlide()" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition z-10 font-bold">
+          ‹
+        </button>
+        <button onclick="nextDetailSlide()" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition z-10 font-bold">
+          ›
+        </button>
+
+        <div id="detail-dots" class="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10"></div>
+      </div>
+
+      <!-- Detail View Content Body -->
+      <div class="p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <!-- Title & Host -->
+          <div class="mb-3">
+            <span id="detail-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 uppercase">Outdoors & Nature</span>
+            <h1 id="detail-title" class="text-2xl font-black text-slate-900 mt-1 leading-snug">Event Name</h1>
+            <p id="detail-host" class="text-xs font-semibold text-slate-500 mt-0.5">Host: Conservation Halton</p>
+          </div>
+
+          <!-- Description -->
+          <div class="mt-4">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5">Quest Details:</h3>
+            <p id="detail-desc" class="text-sm text-slate-600 leading-relaxed"></p>
+          </div>
+
+          <!-- Uniqueness Factor Highlight -->
+          <div class="mt-4 bg-amber-50/70 border border-amber-200/60 rounded-2xl p-3.5">
+            <div class="flex items-center gap-1.5 text-amber-800 text-xs font-bold mb-1">
+              <span>✨ What Makes This Quest Unique</span>
+            </div>
+            <p id="detail-uniqueness" class="text-xs text-amber-900 leading-relaxed"></p>
+          </div>
+
+          <!-- Metadata Box -->
+          <div class="mt-5 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 grid grid-cols-2 gap-3.5 text-sm">
+            <div>
+              <span class="text-[11px] text-slate-400 font-semibold block uppercase">Target Demographic</span>
+              <span id="detail-demographic" class="font-bold text-slate-800 text-xs">Family-Friendly</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 font-semibold block uppercase">Seasonality & Hours</span>
+              <span id="detail-seasonality" class="font-bold text-slate-800 text-xs">Late Dec - Mid Feb</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 font-semibold block uppercase">Base Price (CAD)</span>
+              <span id="detail-price" class="font-bold text-indigo-600 text-sm">$23.00</span>
+            </div>
+            <div>
+              <span class="text-[11px] text-slate-400 font-semibold block uppercase">Region</span>
+              <span id="detail-region" class="font-bold text-slate-800 text-xs">Halton Region</span>
+            </div>
+          </div>
+
+          <!-- Exact Address Pin & Directions -->
+          <div class="mt-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start gap-2.5">
+            <span class="text-base mt-0.5">📍</span>
+            <div class="flex-1">
+              <span class="text-[11px] text-slate-400 font-bold block uppercase">Exact Quest Location</span>
+              <p id="detail-address" class="text-xs font-bold text-slate-800 leading-tight">2259 Milburough Line, Campbellville, ON L0P 1B0</p>
+              <button id="view-on-map-btn" onclick="jumpToSpotOnMap()" class="text-xs text-indigo-600 font-bold mt-1 inline-flex items-center gap-1 hover:underline">
+                View on Interactive Map →
+              </button>
+            </div>
+          </div>
+
+          <!-- Group Discounts & Policies -->
+          <div class="mt-4">
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Discounts & Member Perks:</h4>
+            <p id="detail-discounts" class="text-xs text-slate-600 bg-slate-100 p-3 rounded-xl leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- CTA: [ Check Details ] -->
+        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
+          <div class="shrink-0">
+            <span class="text-[11px] text-slate-400 block font-medium">Admission</span>
+            <span id="detail-sticky-price" class="text-xl font-black text-slate-900">$23.00</span>
+          </div>
+          
+          <a 
+            id="detail-cta-link" 
+            href="#" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-indigo-200 transition text-center text-sm flex items-center justify-center gap-1.5 group"
+          >
+            <span>Check Details</span>
+            <svg class="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== FILTER MODAL ==================== -->
+    <div id="filter-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center md:items-center p-0 md:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 shadow-2xl transition-all max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h3 class="text-base font-extrabold text-slate-900">Filter Quests</h3>
+          <button onclick="closeFilterModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center hover:bg-slate-200">✕</button>
+        </div>
+
+        <div class="space-y-6">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Max Base Admission</label>
+              <span id="price-slider-display" class="text-sm font-black text-indigo-600">$30 CAD</span>
+            </div>
+            <input 
+              type="range" 
+              id="price-range" 
+              min="5" 
+              max="30" 
+              step="1" 
+              value="30" 
+              oninput="updatePriceSlider(this.value)"
+              class="w-full accent-indigo-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+            >
+            <div class="flex justify-between text-[11px] text-slate-400 font-medium mt-1">
+              <span>$5</span>
+              <span>$15</span>
+              <span>$30</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2.5">Category</label>
+            <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+              <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-100">
+                <input type="checkbox" name="cat-filter" value="Outdoors & Nature" checked class="rounded text-indigo-600 focus:ring-0">
+                <span>🌲 Outdoors</span>
+              </label>
+              <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-100">
+                <input type="checkbox" name="cat-filter" value="Farm & Harvest" checked class="rounded text-indigo-600 focus:ring-0">
+                <span>🎃 Farm & Harvest</span>
+              </label>
+              <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-100">
+                <input type="checkbox" name="cat-filter" value="Wine & Cider" checked class="rounded text-indigo-600 focus:ring-0">
+                <span>🍷 Wine & Cider</span>
+              </label>
+              <label class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-slate-100">
+                <input type="checkbox" name="cat-filter" value="Winter & Skating" checked class="rounded text-indigo-600 focus:ring-0">
+                <span>⛸️ Skating</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-slate-100 flex gap-3">
+          <button onclick="resetAllFilters()" class="px-4 py-3 text-xs font-bold text-slate-500 hover:text-slate-800">
+            Reset All
+          </button>
+          <button onclick="applyFilters()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md text-sm transition">
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== JAVASCRIPT ENGINE ==================== -->
+  <script>
+    const experiences = [
+      {
+        id: 1,
+        event_name: "Winterlit: Nature Illuminated",
+        host_business_name: "Conservation Halton (Mountsberg Conservation Area)",
+        category: "Outdoors & Nature",
+        description: "A moonlit woodland experience featuring two distinct kilometers of illuminated trails decorated with sustainable, locally crafted art installations. Guests can stroll through the Illuminated Sugar Bush and Winterlit Trail while warming up beside outdoor fireside lounges with hot maple cider.",
+        location_region: "Halton Region (Campbellville)",
+        exact_address: "2259 Milburough Line, Campbellville, ON L0P 1B0",
+        lat: 43.4627,
+        lng: -80.0260,
+        seasonality: "Late Dec to mid-Feb (Dec 31, 2025 – Feb 16, 2026; 5:30 PM – 9:30 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$23.00",
+        numeric_price: 23.00,
+        group_discount_data: "Children 4 and under free; Kids 14 and under free on Family Day weekend; Conservation Halton members receive discounted admission ($17 adult / $14 child).",
+        uniqueness_factor: "Immerses groups in an ancient sugar bush with eco-art built from repurposed local timber, ambient acoustic sets, and active night skies without commercial drive-thru clutter.",
+        source_url: "https://www.conservationhalton.ca/winterlit/",
+        featured: true,
+        promoTag: "Illuminated Eco-Trail",
+        images: [
+          "https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/magical%20illuminated%20forest%20trail%20winter%20glowing%20lights%20in%20snowy%20woods%20sugar%20bush%20campbellville%20ontario%20cinematic%204k?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/cozy%20outdoor%20fireside%20lounge%20with%20steaming%20hot%20apple%20cider%20mugs%20under%20night%20stars%20winter%20trail?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 2,
+        event_name: "Pingle's Harvest Festival",
+        host_business_name: "Pingle's Farm Market",
+        category: "Farm & Harvest",
+        description: "An expansive fall farm celebration featuring an interactive 6.5-acre puzzle corn maze, pick-your-own apple and pumpkin patches, and live acoustic music. Groups can reserve private campfire fire pits to roast s'mores while savoring chef-curated seasonal street eats, warm cider donuts, and local craft ciders.",
+        location_region: "Durham Region (Hampton)",
+        exact_address: "1805 Taunton Road, Hampton, ON L0B 1J0",
+        lat: 43.9490,
+        lng: -78.7450,
+        seasonality: "September through late October (Wednesdays to Sundays, 9:00 AM – 7:00 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$24.00",
+        numeric_price: 24.00,
+        group_discount_data: "Children 23 months and under free; Twilight Tickets available after 4:00 PM on weekdays; reduced to $8.00 on 'Cheap Wednesdays' in September.",
+        uniqueness_factor: "Elevates the traditional pumpkin patch visit into a full culinary gathering with gourmet food truck creations, hard cider bars, and bookable private campfire pits.",
+        source_url: "https://pinglesfarmmarket.com/pingles-harvest-festival-2026/",
+        featured: true,
+        promoTag: "Culinary & Maze Harvest",
+        images: [
+          "https://images.unsplash.com/photo-1508873696983-2df5293cbdaf?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/aerial%20drone%20view%20of%20elaborate%20autumn%20corn%20maze%20and%20vibrant%20orange%20pumpkin%20patch%20golden%20hour%20fall%20festival?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/group%20roasting%20marshmallows%20at%20private%20campfire%20pit%20autumn%20farm%20festival%20cider%20donuts%20sunset?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 3,
+        event_name: "Winter Wonders at Hendrie Park",
+        host_business_name: "Royal Botanical Gardens (RBG)",
+        category: "Outdoors & Nature",
+        description: "A nighttime outdoor botanical experience that transforms the historic Hendrie Park into an illuminated wonderland with soundscapes and light displays along picturesque garden pathways. Visitors explore 1.5 km of vibrant installations woven into living botanical collections before stopping at the Turner Pavilion for hot cider.",
+        location_region: "Halton Region / Hamilton (Burlington)",
+        exact_address: "680 Plains Road W., Burlington, ON L7T 4H4",
+        lat: 43.2905,
+        lng: -79.8753,
+        seasonality: "Late November to early January (Thursdays to Sundays, 5:30 PM – 10:00 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$22.00",
+        numeric_price: 22.00,
+        group_discount_data: "Children under 3 free; Child tickets (ages 3–12) are $16.00; RBG members receive 50% off general event pricing ($11 adult / $8 child).",
+        uniqueness_factor: "Set inside Canada's largest botanical garden, integrating kinetic lighting and bespoke sound art directly into heritage flora rather than using synthetic commercial props.",
+        source_url: "https://www.rbg.ca/events-experiences/featured-experiences/winter-wonders/",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/botanical%20garden%20at%20night%20with%20magical%20glowing%20light%20tunnel%20winter%20wonders%20hendrie%20park%20burlington%20cinematic?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/vibrant%20sculptural%20light%20installation%20in%20historic%20botanical%20pavilion%20with%20steaming%20cider%20winter%20walkway?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 4,
+        event_name: "Estate Cidery Cellar & Orchard Tour",
+        host_business_name: "Spirit Tree Estate Cidery",
+        category: "Wine & Cider",
+        description: "A 45-minute guided tasting and behind-the-scenes walking tour through an artisanal straw-bale cidery, production cellar, and surrounding apple orchard. Participants sample three flagship artisanal ciders while learning traditional heritage pressing techniques.",
+        location_region: "Peel Region (Caledon)",
+        exact_address: "1137 Boston Mills Road, Caledon, ON L7C 0N1",
+        lat: 43.7548,
+        lng: -79.9482,
+        seasonality: "Year-round (Saturdays and Sundays at 2:00 PM; harvest peak Sep–Nov)",
+        target_demographic: "Adults 19+ (Bistro open to all ages)",
+        base_price_cad: "$15.00",
+        numeric_price: 15.00,
+        group_discount_data: "Private group bookings with custom tastings available upon email inquiry.",
+        uniqueness_factor: "Offers an intimate farm-to-glass look at Ontario craft cider making in Caledon's rolling hills, paired with fresh artisanal hearth-baked breads and wood-fired pizzas.",
+        source_url: "https://spirittreecider.com/visit/",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/straw%20bale%20artisanal%20cidery%20cellar%20wooden%20oak%20barrels%20cider%20flight%20tasting%20glasses%20caledon%20ontario?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/rolling%20apple%20orchard%20hills%20in%20caledon%20with%20wood%20fired%20bistro%20patio%20and%20hearth%20bread?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 5,
+        event_name: "Downey's Pumpkinfest",
+        host_business_name: "Downey's Farm Market & Estate Winery",
+        category: "Farm & Harvest",
+        description: "A harvest festival packed with over 40 farmyard attractions, including an 8-acre themed corn maze, tractor wagon rides, and live outdoor stage shows. Groups can hand-pick pumpkins from an expansive patch and sample fruit wines and hard ciders produced right on the farm.",
+        location_region: "Peel Region (Caledon)",
+        exact_address: "13682 Heart Lake Road, Caledon, ON L7C 2J5",
+        lat: 43.7712,
+        lng: -79.8164,
+        seasonality: "Mid-September through October 31 (Daily 9:30 AM – 5:00 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$25.99",
+        numeric_price: 25.99,
+        group_discount_data: "Infants under 23 months free; save $3.00 per ticket by booking online before your visit; weekday admission discounted to $19.99.",
+        uniqueness_factor: "Pairs a massive family farm playground with an operating estate winery, allowing adults to sample award-winning fruit ciders while enjoying classic harvest activities.",
+        source_url: "https://downeysfarm.com/pumpkinfest/",
+        featured: true,
+        promoTag: "Farm & Winery Harvest",
+        images: [
+          "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/sprawling%20family%20pumpkin%20patch%20harvest%20festival%20with%20vintage%20tractor%20wagon%20ride%20and%20corn%20maze?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/wooden%20farm%20market%20winery%20sampling%20booth%20with%20fruit%20wine%20and%20fresh%20cider%20jugs%20autumn?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 6,
+        event_name: "Chudleigh's Farm & Campfire Experience",
+        host_business_name: "Chudleigh's Entertainment Farm",
+        category: "Farm & Harvest",
+        description: "A curated orchard day featuring tractor wagon rides, scenic nature trails, a farm animal corral, and seasonal apple and pumpkin picking. Friends and families can gather around wood-burning fire pits to enjoy fresh Blossom pastries, wood-fired barbecue, and craft hard cider on tap.",
+        location_region: "Halton Region (Milton)",
+        exact_address: "9528 Regional Road 25, Halton Hills, ON L9T 2X7",
+        lat: 43.5574,
+        lng: -79.9234,
+        seasonality: "July through October 31 (Daily 10:00 AM – 5:30 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$16.50",
+        numeric_price: 16.50,
+        group_discount_data: "Children 3 and under free; individual season passes for $69.00 offer 25% off summer music night tickets and 15% off market merchandise.",
+        uniqueness_factor: "Avoids overcrowding via 3-hour timed-entry reservations and features dedicated campfire lounges with live acoustic bands and farm-fresh cider.",
+        source_url: "https://www.chudleighs.com/visit-our-farm/admissions-information/",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/apple%20picking%20orchard%20in%20milton%20halton%20hills%20with%20farm%20wagon%20and%20families%20enjoying%20sunny%20autumn%20day?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/people%20sitting%20around%20wood%20burning%20fire%20pit%20eating%20warm%20apple%20blossom%20pastries%20with%20ice%20cream%20evening?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 7,
+        event_name: "Wine Flight & Sculpture Garden",
+        host_business_name: "13th Street Winery",
+        category: "Wine & Cider",
+        description: "A 30-minute seated guided wine tasting showcasing four estate-grown cool-climate wines paired with an exploration of an expansive outdoor contemporary sculpture garden. Guests can wander among monumental Canadian art pieces with a glass in hand and pick up legendary fresh butter tarts.",
+        location_region: "Niagara Region (St. Catharines)",
+        exact_address: "1776 Fourth Avenue, St. Catharines, ON L2R 6P9",
+        lat: 43.1482,
+        lng: -79.2882,
+        seasonality: "Year-round (Thursdays to Sundays; harvest releases in fall)",
+        target_demographic: "Adults 19+ (Sculpture grounds & bakery open to all)",
+        base_price_cad: "$20.00",
+        numeric_price: 20.00,
+        group_discount_data: "Wine Club members pay $15.00 (Beyond Club complimentary); non-drinking designated drivers or under-19 guests sit free with advance reservation note.",
+        uniqueness_factor: "Pairs world-class Niagara sparkling wines with a museum-grade outdoor sculpture park and Ontario's premier scratch-baked butter tarts.",
+        source_url: "https://13thstreetwinery.com/product/on-site-guided-wine-tasting/",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/monumental%20modern%20canadian%20sculpture%20in%20a%20green%20niagara%20vineyard%20with%20visitors%20sipping%20white%20wine?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/freshly%20baked%20golden%20flaky%20canadian%20butter%20tarts%20with%20sparkling%20wine%20glasses%20on%20rustic%20winery%20table?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 8,
+        event_name: "Ignite the Night Winter Trail & Skating",
+        host_business_name: "Credit Valley Conservation (Terra Cotta CA)",
+        category: "Winter & Skating",
+        description: "An enchanting winter evening event along a two-kilometer illuminated forest pathway through the woods of Terra Cotta. Guests can experience outdoor ice skating on the frozen pavilion pond, hike or snowshoe along glowing trails, and warm up with hot cider by the campfire.",
+        location_region: "Halton Region / Peel (Halton Hills)",
+        exact_address: "14452 Winston Churchill Blvd, Halton Hills, ON L7G 0N9",
+        lat: 43.7236,
+        lng: -79.9546,
+        seasonality: "Winter evenings in Jan & Feb (Fridays & Saturdays, 6:30 PM – 9:00 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$8.50",
+        numeric_price: 8.50,
+        group_discount_data: "Children 5 and under free; Youth (6–14) $3.75; groups of 9+ adults pay discounted rate of $4.00/person; free entry for Credit Valley Parks passholders.",
+        uniqueness_factor: "Offers an authentic nighttime winter wonderland with kicksled and snowshoe rentals on real woodland terrain instead of manicured city rinks.",
+        source_url: "https://cvc.ca/event/ignite-the-night-22/",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1482867996988-29ec3a0f1aac?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/frozen%20natural%20pond%20ice%20skating%20surrounded%20by%20glowing%20fairy%20lights%20in%20deep%20pine%20woods%20terra%20cotta%20ontario?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/hikers%20with%20traditional%20kicksleds%20and%20snowshoes%20on%20illuminated%20snowy%20forest%20night%20trail%20with%20lanterns?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 9,
+        event_name: "The Great One's Backyard Rink & Whisky",
+        host_business_name: "Wayne Gretzky Estates",
+        category: "Winter & Skating",
+        description: "A quintessential winter sports and tasting experience centered around a full-sized outdoor refrigerated hockey rink set amidst the estate vineyards. Visitors can lace up skates for a community glide, take in DJ beats on weekend evenings, and relax on the heated Whisky Bar Patio.",
+        location_region: "Niagara Region (Niagara-on-the-Lake)",
+        exact_address: "1219 Niagara Stone Road, Niagara-on-the-Lake, ON L0S 1J0",
+        lat: 43.2112,
+        lng: -79.1350,
+        seasonality: "December through mid-March (Daily, weather permitting; patio open through Family Day)",
+        target_demographic: "All Ages (Ice rink for all; Whisky Bar is 19+)",
+        base_price_cad: "$5.00",
+        numeric_price: 5.00,
+        group_discount_data: "Children 12 and under skate free; Wine Club members receive 50% off skating ($2.50) and skate rentals ($5.00 vs $10.00 regular).",
+        uniqueness_factor: "Skate outdoors in the middle of wine country on an authentic backyard-style rink before warming up next to open fire pits with craft whisky flights.",
+        source_url: "https://waynegretzkyestates.com/skating-rink",
+        featured: true,
+        promoTag: "Vineyard Ice Skating & Whisky",
+        images: [
+          "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/full%20sized%20outdoor%20refrigerated%20ice%20hockey%20rink%20in%20niagara%20on%20the%20lake%20vineyard%20with%20skaters%20evening%20lights?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/cozy%20heated%20outdoor%20whisky%20bar%20patio%20with%20firepits%20craft%20cocktails%20overlooking%20ice%20rink%20winter?width=800&height=500&nologo=true"
+        ]
+      },
+      {
+        id: 10,
+        event_name: "Fall Fun on the Farm & Sunflower Walk",
+        host_business_name: "Applewood Farm & Winery",
+        category: "Farm & Harvest",
+        description: "A relaxed rural autumn experience featuring a 30-acre corn maze, vibrant sunflower walking trails, and pumpkin picking in the Scugog countryside. Groups can pick produce or bouquets, play lawn games, and unwind on the farm patio with fruit wine or pumpkin cider.",
+        location_region: "Durham Region (Seagrave / Scugog)",
+        exact_address: "2055 Saintfield Road, Seagrave, ON L0C 1H0",
+        lat: 44.1882,
+        lng: -78.9695,
+        seasonality: "Weekends late Sep through Halloween (Sat & Sun 11:00 AM – 5:00 PM)",
+        target_demographic: "Family-Friendly / All Ages",
+        base_price_cad: "$13.00",
+        numeric_price: 13.00,
+        group_discount_data: "Children under 3 free; every paid admission ticket includes a pick-your-own pumpkin or squash (or 10 cut-your-own sunflower stems) at no extra cost.",
+        uniqueness_factor: "Unlike high-volume farms that charge heavily for every add-on, Applewood bundles a field-picked pumpkin or cut sunflowers directly into admission alongside estate fruit wines.",
+        source_url: "https://www.applewoodfarmwinery.com/fall-fun-on-the-farm",
+        featured: false,
+        images: [
+          "https://images.unsplash.com/photo-1473081556163-2a17de81fc97?auto=format&fit=crop&w=800&q=80",
+          "https://image.pollinations.ai/prompt/endless%20golden%20sunflower%20walking%20trails%20in%20autumn%20scugog%20countryside%20with%20cut%20your%20own%20bouquets%20sunlight?width=800&height=500&nologo=true",
+          "https://image.pollinations.ai/prompt/rustic%20farm%20winery%20patio%20with%20glasses%20of%20sparkling%20pumpkin%20cider%20and%20fresh%20heirloom%20squash%20baskets?width=800&height=500&nologo=true"
+        ]
+      }
+    ];
+
+    let filterState = {
+      search: "",
+      maxPrice: 30,
+      categories: ["Outdoors & Nature", "Farm & Harvest", "Wine & Cider", "Winter & Skating"],
+      sortBy: "recommended"
+    };
+
+    let currentExp = experiences[0];
+    let currentDetailSlideIdx = 0;
+    let promoCurrentIndex = 0;
+    
+    // Map variables
+    let leafletMapInstance = null;
+    let mapMarkerGroup = null;
+    let currentVisibleBounds = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderPromotions();
+      executeFilterAndSort();
+
+      document.addEventListener("click", (e) => {
+        const sortBtn = document.getElementById("sort-btn");
+        const sortMenu = document.getElementById("sort-menu");
+        if (sortBtn && sortMenu && !sortBtn.contains(e.target) && !sortMenu.contains(e.target)) {
+          sortMenu.classList.add("hidden");
+        }
+      });
+    });
+
+    // ==================== MAP SYSTEM ====================
+    function initMap() {
+      if (leafletMapInstance) return;
+
+      const mapContainer = document.getElementById('leaflet-map');
+      if (!mapContainer) return;
+
+      leafletMapInstance = L.map('leaflet-map', {
+        center: [43.6532, -79.3832],
+        zoom: 9,
+        scrollWheelZoom: true
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19,
+        subdomains: 'abcd'
+      }).addTo(leafletMapInstance);
+
+      mapMarkerGroup = L.layerGroup().addTo(leafletMapInstance);
+      populateMapMarkers();
+    }
+
+    function createTeardropIcon() {
+      return L.divIcon({
+        className: 'custom-pin-wrapper',
+        html: `
+          <div class="custom-pin-marker">
+            <span>📍</span>
+          </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36]
+      });
+    }
+
+    function populateMapMarkers() {
+      if (!leafletMapInstance || !mapMarkerGroup) return;
+      mapMarkerGroup.clearLayers();
+      currentVisibleBounds = [];
+
+      const currentFiltered = getFilteredExperiences();
+      document.getElementById("map-spots-count").textContent = `📍 Showing ${currentFiltered.length} quest locations`;
+
+      currentFiltered.forEach(exp => {
+        const marker = L.marker([exp.lat, exp.lng], { icon: createTeardropIcon() });
+        
+        marker.bindPopup(`
+          <div class="p-1 text-slate-800" style="min-width: 170px;">
+            <b class="text-indigo-600 block text-xs font-bold leading-tight">${exp.event_name}</b>
+            <span class="text-[10px] text-slate-500 block mt-0.5">${exp.host_business_name}</span>
+            <p class="text-[10px] text-slate-600 mt-1 leading-tight">📍 ${exp.exact_address}</p>
+            <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-black text-slate-900">${exp.base_price_cad}</span>
+              <button onclick="openDetail(${exp.id})" class="px-2 py-0.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold">
+                Details →
+              </button>
+            </div>
+          </div>
+        `);
+
+        marker.on('click', () => {
+          showMapPreviewCard(exp);
+        });
+
+        marker.addTo(mapMarkerGroup);
+        currentVisibleBounds.push([exp.lat, exp.lng]);
+      });
+
+      resetMapViewBounds();
+    }
+
+    function resetMapViewBounds() {
+      if (!leafletMapInstance || currentVisibleBounds.length === 0) return;
+      leafletMapInstance.fitBounds(currentVisibleBounds, { 
+        padding: [30, 30],
+        maxZoom: 12
+      });
+    }
+
+    function showMapPreviewCard(exp) {
+      const card = document.getElementById("map-preview-card");
+      card.classList.remove("hidden");
+      card.innerHTML = `
+        <img src="${exp.images[0]}" class="w-14 h-14 rounded-xl object-cover shrink-0" onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200'">
+        <div class="flex-1 min-w-0">
+          <h4 class="text-xs font-bold text-slate-900 truncate">${exp.event_name}</h4>
+          <p class="text-[10px] text-slate-500 truncate">📍 ${exp.exact_address}</p>
+          <span class="text-[11px] font-black text-indigo-600">${exp.base_price_cad} CAD</span>
+        </div>
+        <button onclick="openDetail(${exp.id})" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shrink-0">
+          Details
+        </button>
+      `;
+    }
+
+    function jumpToSpotOnMap() {
+      showView('map');
+      setTimeout(() => {
+        if (leafletMapInstance) {
+          leafletMapInstance.invalidateSize();
+          leafletMapInstance.setView([currentExp.lat, currentExp.lng], 14);
+          showMapPreviewCard(currentExp);
+        }
+      }, 300);
+    }
+
+    // ==================== FILTER & SORT LOGIC ====================
+    function getFilteredExperiences() {
+      return experiences.filter(exp => {
+        const q = filterState.search.toLowerCase();
+        const matchesSearch = 
+          exp.event_name.toLowerCase().includes(q) ||
+          exp.host_business_name.toLowerCase().includes(q) ||
+          exp.location_region.toLowerCase().includes(q) ||
+          exp.exact_address.toLowerCase().includes(q) ||
+          exp.description.toLowerCase().includes(q);
+
+        const matchesPrice = exp.numeric_price <= filterState.maxPrice;
+        const matchesCat = filterState.categories.includes(exp.category);
+
+        return matchesSearch && matchesPrice && matchesCat;
+      });
+    }
+
+    function executeFilterAndSort() {
+      let results = getFilteredExperiences();
+
+      if (filterState.sortBy === "price-asc") {
+        results.sort((a, b) => a.numeric_price - b.numeric_price);
+      } else if (filterState.sortBy === "price-desc") {
+        results.sort((a, b) => b.numeric_price - a.numeric_price);
+      } else {
+        results.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+      }
+
+      renderRails(results);
+      renderAllList(results);
+      updateFilterUI(results.length);
+
+      if (leafletMapInstance) {
+        populateMapMarkers();
+      }
+    }
+
+    function updateFilterUI(count) {
+      document.getElementById("result-count").textContent = `Showing ${count} quests`;
+
+      let activeCount = 0;
+      if (filterState.maxPrice < 30) activeCount++;
+      if (filterState.categories.length < 4) activeCount++;
+      if (filterState.sortBy !== 'recommended') activeCount++;
+
+      const badge = document.getElementById("filter-badge");
+      const clearLink = document.getElementById("clear-all-link");
+
+      if (activeCount > 0) {
+        badge.textContent = activeCount;
+        badge.classList.remove("hidden");
+        badge.classList.add("flex");
+        clearLink.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+        clearLink.classList.add("hidden");
+      }
+    }
+
+    function toggleSortMenu() {
+      document.getElementById("sort-menu").classList.toggle("hidden");
+    }
+
+    function setSortOption(option) {
+      filterState.sortBy = option;
+      document.getElementById("sort-menu").classList.add("hidden");
+
+      document.querySelectorAll(".sort-check").forEach(el => el.classList.add("hidden"));
+      const activeCheck = document.getElementById(`check-${option}`);
+      if (activeCheck) activeCheck.classList.remove("hidden");
+
+      const labelMap = {
+        'recommended': 'Sort',
+        'price-asc': 'Price ↑',
+        'price-desc': 'Price ↓'
+      };
+      document.getElementById("sort-current-label").textContent = labelMap[option];
+      executeFilterAndSort();
+    }
+
+    function openFilterModal() {
+      document.getElementById("filter-modal").classList.remove("hidden");
+    }
+
+    function closeFilterModal() {
+      document.getElementById("filter-modal").classList.add("hidden");
+    }
+
+    function updatePriceSlider(val) {
+      filterState.maxPrice = Number(val);
+      document.getElementById("price-slider-display").textContent = `$${val} CAD`;
+    }
+
+    function applyFilters() {
+      const selected = [];
+      document.querySelectorAll("input[name='cat-filter']:checked").forEach(cb => selected.push(cb.value));
+      filterState.categories = selected.length > 0 ? selected : ["Outdoors & Nature", "Farm & Harvest", "Wine & Cider", "Winter & Skating"];
+      closeFilterModal();
+      executeFilterAndSort();
+    }
+
+    function resetAllFilters() {
+      filterState.search = "";
+      filterState.maxPrice = 30;
+      filterState.categories = ["Outdoors & Nature", "Farm & Harvest", "Wine & Cider", "Winter & Skating"];
+      filterState.sortBy = "recommended";
+
+      document.getElementById("search-input").value = "";
+      document.getElementById("price-range").value = 30;
+      document.getElementById("price-slider-display").textContent = "$30 CAD";
+      document.querySelectorAll("input[name='cat-filter']").forEach(cb => cb.checked = true);
+      document.getElementById("sort-current-label").textContent = "Sort";
+
+      document.querySelectorAll(".cat-pill").forEach((el, idx) => {
+        el.className = idx === 0 
+          ? "cat-pill px-3.5 py-1.5 rounded-full bg-indigo-600 text-white shrink-0" 
+          : "cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0";
+      });
+
+      closeFilterModal();
+      executeFilterAndSort();
+    }
+
+    function handleSearch(val) {
+      filterState.search = val;
+      executeFilterAndSort();
+    }
+
+    function quickFilterCategory(cat) {
+      document.querySelectorAll(".cat-pill").forEach(el => {
+        if (el.textContent.includes(cat)) {
+          el.className = "cat-pill px-3.5 py-1.5 rounded-full bg-indigo-600 text-white shrink-0";
+        } else {
+          el.className = "cat-pill px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 shrink-0";
+        }
+      });
+
+      if (cat === 'All') {
+        filterState.categories = ["Outdoors & Nature", "Farm & Harvest", "Wine & Cider", "Winter & Skating"];
+      } else {
+        filterState.categories = [cat];
+      }
+      executeFilterAndSort();
+    }
+
+    function renderRails(items) {
+      const outdoorsRail = document.getElementById("outdoors-rail");
+      const farmRail = document.getElementById("farm-rail");
+      const outdoorsSec = document.getElementById("section-outdoors");
+      const farmSec = document.getElementById("section-farm");
+
+      const outdoors = items.filter(e => e.category === 'Outdoors & Nature');
+      const farms = items.filter(e => e.category === 'Farm & Harvest');
+
+      outdoorsSec.style.display = outdoors.length > 0 ? "block" : "none";
+      farmSec.style.display = farms.length > 0 ? "block" : "none";
+
+      outdoorsRail.innerHTML = outdoors.map(e => createCardHTML(e)).join('');
+      farmRail.innerHTML = farms.map(e => createCardHTML(e)).join('');
+    }
+
+    function createCardHTML(exp) {
+      return `
+        <div onclick="openDetail(${exp.id})" class="min-w-[185px] max-w-[185px] bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer flex flex-col">
+          <div class="h-28 w-full bg-slate-200 relative overflow-hidden">
+            <img src="${exp.images[0]}" class="w-full h-full object-cover" alt="${exp.event_name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400'">
+            <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+              ${exp.base_price_cad}
+            </span>
+          </div>
+          <div class="p-2.5 flex-1 flex flex-col justify-between">
+            <div>
+              <span class="text-[9px] font-bold text-indigo-600 uppercase tracking-wide block truncate">${exp.host_business_name}</span>
+              <h4 class="text-xs font-bold text-slate-800 line-clamp-1 mt-0.5">${exp.event_name}</h4>
+              <p class="text-[10px] text-slate-400 truncate mt-0.5">📍 ${exp.location_region}</p>
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-black text-slate-900">${exp.base_price_cad}</span>
+              <span class="text-[10px] text-indigo-600 font-bold hover:underline">Details →</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAllList(items) {
+      const container = document.getElementById("all-experiences-list");
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <p class="text-2xl mb-1">🔍</p>
+            <p class="text-sm font-bold text-slate-700">No quests match your filters</p>
+            <button onclick="resetAllFilters()" class="mt-3 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold">Reset Filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map(exp => `
+        <div onclick="openDetail(${exp.id})" class="flex gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 hover:border-indigo-200 transition cursor-pointer shadow-sm">
+          <img src="${exp.images[0]}" class="w-20 h-20 rounded-xl object-cover shrink-0" alt="${exp.event_name}" onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200'">
+          <div class="flex-1 flex flex-col justify-between py-0.5 min-w-0">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase text-indigo-600">${exp.category}</span>
+                <span class="text-xs font-black text-slate-900">${exp.base_price_cad}</span>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 leading-snug truncate">${exp.event_name}</h4>
+              <p class="text-[11px] text-slate-500 font-medium truncate">${exp.host_business_name}</p>
+              <p class="text-[10px] text-slate-400 truncate">📍 ${exp.exact_address}</p>
+            </div>
+            <div class="flex justify-between items-center mt-1 pt-1 border-t border-slate-50">
+              <span class="text-[10px] text-emerald-600 font-bold">✓ ${exp.target_demographic}</span>
+              <span class="text-xs font-bold text-indigo-600">View Details →</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPromotions() {
+      const featured = experiences.filter(e => e.featured);
+      const inner = document.getElementById("promo-carousel-inner");
+      const dots = document.getElementById("promo-dots");
+      inner.innerHTML = "";
+      dots.innerHTML = "";
+
+      featured.forEach((item, idx) => {
+        const slide = document.createElement("div");
+        slide.className = "w-full h-full flex-shrink-0 relative cursor-pointer";
+        slide.onclick = () => openDetail(item.id);
+        slide.innerHTML = `
+          <img src="${item.images[0]}" class="w-full h-full object-cover brightness-[0.65]" alt="${item.event_name}" onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800'">
+          <div class="absolute inset-0 p-5 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/30 to-transparent">
+            <span class="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-500 text-white w-max mb-1.5">
+              ${item.promoTag}
+            </span>
+            <h3 class="text-xl font-bold leading-tight drop-shadow-sm">${item.event_name}</h3>
+            <p class="text-xs text-slate-300 mt-1 flex items-center gap-1.5 truncate">
+              <span>📍 ${item.location_region}</span>
+              <span>•</span>
+              <span class="text-emerald-400 font-bold">${item.base_price_cad} CAD</span>
+            </p>
+          </div>
+        `;
+        inner.appendChild(slide);
+
+        const dot = document.createElement("button");
+        dot.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white w-5' : 'bg-white/40'}`;
+        dot.onclick = (e) => { e.stopPropagation(); setPromoSlide(idx); };
+        dots.appendChild(dot);
+      });
+
+      setInterval(() => {
+        promoCurrentIndex = (promoCurrentIndex + 1) % featured.length;
+        setPromoSlide(promoCurrentIndex);
+      }, 5000);
+    }
+
+    function setPromoSlide(index) {
+      promoCurrentIndex = index;
+      document.getElementById("promo-carousel-inner").style.transform = `translateX(-${index * 100}%)`;
+      const dots = document.getElementById("promo-dots").children;
+      Array.from(dots).forEach((dot, idx) => {
+        dot.className = `w-2 h-2 rounded-full transition-all ${idx === index ? 'bg-white w-5' : 'bg-white/40'}`;
+      });
+    }
+
+    // ==================== SCREEN SWITCHING ====================
+    function showView(view) {
+      const listView = document.getElementById("list-view");
+      const mapView = document.getElementById("map-view");
+      const detailView = document.getElementById("detail-view");
+      const tabNav = document.getElementById("tab-nav");
+      const backBtn = document.getElementById("back-btn");
+
+      document.getElementById("list-tab-btn").className = "flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2 transition";
+      document.getElementById("map-tab-btn").className = "flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2 transition";
+
+      if (view === 'list') {
+        listView.classList.remove('hidden');
+        mapView.classList.add('hidden');
+        detailView.classList.add('hidden');
+        tabNav.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+        document.getElementById("list-tab-btn").className = "flex-1 py-1.5 rounded-lg bg-white shadow-sm text-indigo-600 flex items-center justify-center gap-2 transition";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (view === 'map') {
+        listView.classList.add('hidden');
+        mapView.classList.remove('hidden');
+        detailView.classList.add('hidden');
+        tabNav.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+        document.getElementById("map-tab-btn").className = "flex-1 py-1.5 rounded-lg bg-white shadow-sm text-indigo-600 flex items-center justify-center gap-2 transition";
+        
+        if (!leafletMapInstance) {
+          initMap();
+        }
+        setTimeout(() => {
+          if (leafletMapInstance) {
+            leafletMapInstance.invalidateSize();
+            resetMapViewBounds();
+          }
+        }, 150);
+        setTimeout(() => {
+          if (leafletMapInstance) {
+            leafletMapInstance.invalidateSize();
+          }
+        }, 400);
+
+      } else if (view === 'detail') {
+        listView.classList.add('hidden');
+        mapView.classList.add('hidden');
+        detailView.classList.remove('hidden');
+        tabNav.classList.add('hidden');
+        backBtn.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function openDetail(id) {
+      const exp = experiences.find(e => e.id === id);
+      if (!exp) return;
+      currentExp = exp;
+      currentDetailSlideIdx = 0;
+
+      document.getElementById("detail-badge").textContent = exp.category;
+      document.getElementById("detail-title").textContent = exp.event_name;
+      document.getElementById("detail-host").textContent = `Organized by: ${exp.host_business_name}`;
+      document.getElementById("detail-desc").textContent = exp.description;
+      document.getElementById("detail-uniqueness").textContent = exp.uniqueness_factor;
+      
+      document.getElementById("detail-demographic").textContent = exp.target_demographic;
+      document.getElementById("detail-seasonality").textContent = exp.seasonality;
+      document.getElementById("detail-price").textContent = `${exp.base_price_cad} CAD`;
+      document.getElementById("detail-region").textContent = exp.location_region;
+      document.getElementById("detail-address").textContent = exp.exact_address;
+      document.getElementById("detail-discounts").textContent = exp.group_discount_data;
+      document.getElementById("detail-sticky-price").textContent = exp.base_price_cad;
+
+      const ctaLink = document.getElementById("detail-cta-link");
+      ctaLink.href = exp.source_url;
+
+      const slider = document.getElementById("detail-photo-slider");
+      const dots = document.getElementById("detail-dots");
+
+      slider.innerHTML = exp.images.map((img, i) => `
+        <div class="w-full h-full flex-shrink-0 relative">
+          <img 
+            src="${img}" 
+            class="w-full h-full object-cover" 
+            alt="${exp.event_name} photo ${i + 1}"
+            onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800'"
+          >
+          ${i > 0 ? '<span class="absolute top-3 left-3 bg-indigo-900/80 backdrop-blur-md text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-400/30">✨ AI Visual</span>' : ''}
+        </div>
+      `).join('');
+
+      dots.innerHTML = exp.images.map((_, i) => `
+        <button onclick="setDetailSlide(${i})" class="w-2 h-2 rounded-full transition-all ${i === 0 ? 'bg-white w-5' : 'bg-white/40'}"></button>
+      `).join('');
+
+      setDetailSlide(0);
+      showView('detail');
+    }
+
+    function setDetailSlide(idx) {
+      if (!currentExp) return;
+      currentDetailSlideIdx = idx;
+      document.getElementById("detail-photo-slider").style.transform = `translateX(-${idx * 100}%)`;
+      const dots = document.getElementById("detail-dots").children;
+      Array.from(dots).forEach((dot, i) => {
+        dot.className = `w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white w-5' : 'bg-white/40'}`;
+      });
+    }
+
+    function nextDetailSlide() {
+      if (!currentExp) return;
+      const nextIdx = (currentDetailSlideIdx + 1) % currentExp.images.length;
+      setDetailSlide(nextIdx);
+    }
+
+    function prevDetailSlide() {
+      if (!currentExp) return;
+      const prevIdx = (currentDetailSlideIdx - 1 + currentExp.images.length) % currentExp.images.length;
+      setDetailSlide(prevIdx);
+    }
+  </script>
+</body>
+</html>
