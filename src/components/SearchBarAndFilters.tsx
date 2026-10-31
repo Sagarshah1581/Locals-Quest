@@ -36,17 +36,17 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
   }, []);
 
   const sortLabelMap: Record<SortOption, string> = {
-    recommended: 'Sort',
-    'price-asc': 'Price ↑',
-    'price-desc': 'Price ↓',
+    recommended: 'Featured',
+    'price-asc': 'Price: Low',
+    'price-desc': 'Price: High',
   };
 
   const categories = [
     { label: 'All', value: 'All' },
-    { label: '🌲 Outdoors & Nature', value: 'Outdoors & Nature' },
-    { label: '🎃 Farm & Harvest', value: 'Farm & Harvest' },
-    { label: '🍷 Wine & Cider', value: 'Wine & Cider' },
-    { label: '⛸️ Winter & Skating', value: 'Winter & Skating' },
+    { label: '✨ Spectacles & Vibes', value: 'Spectacles & Vibes' },
+    { label: '🎨 The Creator Hub', value: 'The Creator Hub' },
+    { label: '🧭 Quests & Escapes', value: 'Quests & Escapes' },
+    { label: '💎 Hidden Gems & Views', value: 'Hidden Gems & Views' },
   ];
 
   const isCategoryActive = (catVal: string) => {
@@ -65,8 +65,8 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
             type="text"
             value={filterState.search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search quests, orchards, regions, addresses..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            placeholder="Search quests, orchards, regions..."
+            className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200/90 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all shadow-sm"
           />
           <svg
             className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"
@@ -74,22 +74,30 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          {filterState.search && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Filter Button */}
         <button
           onClick={onOpenFilterModal}
           title="Open Filters"
-          className="relative px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0"
+          className="relative px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200/90 text-slate-800 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0 shadow-sm"
         >
-          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M7 12h10M10 18h4" />
+          <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-black flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[9px] font-black flex items-center justify-center">
               {activeFilterCount}
             </span>
           )}
@@ -100,16 +108,16 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
           <button
             onClick={() => setIsSortOpen((prev) => !prev)}
             title="Sort Options"
-            className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0"
+            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200/90 text-slate-800 rounded-2xl flex items-center gap-1.5 transition text-xs font-bold border border-slate-200/80 active:scale-95 shrink-0 shadow-sm"
           >
-            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
             </svg>
             <span className="hidden sm:inline">{sortLabelMap[filterState.sortBy]}</span>
           </button>
 
           {isSortOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+            <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Sort By
               </div>
@@ -118,30 +126,36 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
                   onSortChange('recommended');
                   setIsSortOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between"
+                className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition ${
+                  filterState.sortBy === 'recommended' ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
+                }`}
               >
-                <span>Featured / Curated</span>
-                {filterState.sortBy === 'recommended' && <span className="text-indigo-600 font-bold">✓</span>}
+                <span>Curated / Featured</span>
+                {filterState.sortBy === 'recommended' && <span>✓</span>}
               </button>
               <button
                 onClick={() => {
                   onSortChange('price-asc');
                   setIsSortOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between"
+                className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition ${
+                  filterState.sortBy === 'price-asc' ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
+                }`}
               >
                 <span>Price: Low to High</span>
-                {filterState.sortBy === 'price-asc' && <span className="text-indigo-600 font-bold">✓</span>}
+                {filterState.sortBy === 'price-asc' && <span>✓</span>}
               </button>
               <button
                 onClick={() => {
                   onSortChange('price-desc');
                   setIsSortOpen(false);
                 }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-between"
+                className={`w-full text-left px-3.5 py-2 text-xs font-semibold hover:bg-slate-50 flex items-center justify-between transition ${
+                  filterState.sortBy === 'price-desc' ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
+                }`}
               >
                 <span>Price: High to Low</span>
-                {filterState.sortBy === 'price-desc' && <span className="text-indigo-600 font-bold">✓</span>}
+                {filterState.sortBy === 'price-desc' && <span>✓</span>}
               </button>
             </div>
           )}
@@ -154,10 +168,10 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
           <button
             key={cat.value}
             onClick={() => onQuickCategory(cat.value)}
-            className={`px-3.5 py-1.5 rounded-full shrink-0 transition ${
+            className={`px-3.5 py-1.5 rounded-full shrink-0 transition-all duration-200 cursor-pointer ${
               isCategoryActive(cat.value)
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-slate-100 hover:bg-slate-200/90 text-slate-600'
             }`}
           >
             {cat.label}
@@ -167,13 +181,13 @@ export const SearchBarAndFilters: React.FC<SearchBarAndFiltersProps> = ({
 
       {/* Active Filter Status */}
       <div className="mt-3 flex items-center justify-between text-xs text-slate-400 font-medium">
-        <span>Showing {totalFilteredCount} quests</span>
+        <span>Showing {totalFilteredCount} verified quests</span>
         {activeFilterCount > 0 && (
           <button
             onClick={onResetFilters}
-            className="text-indigo-600 font-bold hover:underline"
+            className="text-indigo-600 font-semibold hover:text-indigo-800 transition"
           >
-            Reset filters
+            Reset all filters
           </button>
         )}
       </div>

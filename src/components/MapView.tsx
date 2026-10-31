@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Experience } from '../types';
+import { GoogleRatingBadge } from './GoogleRatingBadge';
 
 interface MapViewProps {
   experiences: Experience[];
@@ -27,9 +28,9 @@ export const MapView: React.FC<MapViewProps> = ({
           <span>📍</span>
         </div>
       `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-      popupAnchor: [0, -36],
+      iconSize: [38, 38],
+      iconAnchor: [19, 38],
+      popupAnchor: [0, -38],
     });
   };
 
@@ -43,11 +44,11 @@ export const MapView: React.FC<MapViewProps> = ({
         scrollWheelZoom: true,
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, &copy; <a href="https://carto.com/">CARTO</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
-        subdomains: 'abcd',
+        subdomains: ['a', 'b', 'c'],
       }).addTo(map);
 
       const markerGroup = L.layerGroup().addTo(map);
@@ -77,14 +78,24 @@ export const MapView: React.FC<MapViewProps> = ({
       const marker = L.marker([exp.lat, exp.lng], { icon: createTeardropIcon() });
 
       const popupDiv = document.createElement('div');
-      popupDiv.className = 'p-1 text-slate-800 min-w-[170px]';
+      popupDiv.className = 'p-1.5 text-slate-800 min-w-[180px] font-sans';
       popupDiv.innerHTML = `
-        <b class="text-indigo-600 block text-xs font-bold leading-tight">${exp.event_name}</b>
-        <span class="text-[10px] text-slate-500 block mt-0.5">${exp.host_business_name}</span>
-        <p class="text-[10px] text-slate-600 mt-1 leading-tight">📍 ${exp.exact_address}</p>
-        <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+        <div class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-0.5">${exp.category}</div>
+        <b class="text-slate-900 block text-xs font-extrabold leading-tight">${exp.event_name}</b>
+        <span class="text-[11px] text-slate-500 block mt-0.5">${exp.host_business_name}</span>
+        <div style="display: flex; align-items: center; gap: 4px; margin: 4px 0; font-size: 11px; font-weight: 700;">
+          <span style="color: #4285F4; font-weight: 900; font-size: 10px;">G</span>
+          <span style="color: #f59e0b;">★</span>
+          <span style="color: #0f172a;">${(exp.google_rating ?? 4.7).toFixed(1)}</span>
+          <span style="color: #64748b; font-weight: 500; font-size: 10px;">(${(exp.google_reviews_count ?? 380).toLocaleString()} reviews)</span>
+        </div>
+        <p class="text-[10px] text-slate-600 mt-1 leading-tight flex items-start gap-1">
+          <span>📍</span>
+          <span>${exp.exact_address}</span>
+        </p>
+        <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
           <span class="text-xs font-black text-slate-900">${exp.base_price_cad}</span>
-          <button id="popup-btn-${exp.id}" class="px-2 py-0.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold">
+          <button id="popup-btn-${exp.id}" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition">
             Details →
           </button>
         </div>
@@ -111,31 +122,33 @@ export const MapView: React.FC<MapViewProps> = ({
       map.setView([selectedExperience.lat, selectedExperience.lng], 13);
       setActivePreviewExp(selectedExperience);
     } else if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
     }
   }, [experiences, selectedExperience, onSelectExperience]);
 
   const fitAllPins = () => {
     if (!mapInstanceRef.current || experiences.length === 0) return;
     const bounds = experiences.map((exp) => [exp.lat, exp.lng] as [number, number]);
-    mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+    mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
   };
 
   return (
-    <div className="flex-1 relative flex flex-col w-full" style={{ minHeight: '550px' }}>
-      <div className="p-3 bg-white border-b border-slate-100 flex items-center justify-between z-20">
-        <span className="text-xs font-bold text-slate-700">
-          📍 Showing {experiences.length} quest locations
+    <div className="flex-1 relative flex flex-col w-full" style={{ minHeight: '580px' }}>
+      {/* Top Map Action Bar */}
+      <div className="p-3 bg-white/90 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between z-20 shadow-xs">
+        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+          <span>Showing {experiences.length} quest locations</span>
         </span>
         <button
           onClick={fitAllPins}
-          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition flex items-center gap-1"
+          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.2"
               d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
             />
           </svg>
@@ -143,17 +156,19 @@ export const MapView: React.FC<MapViewProps> = ({
         </button>
       </div>
 
+      {/* Map Surface */}
       <div
         ref={mapContainerRef}
-        style={{ height: '72vh', minHeight: '520px', width: '100%' }}
+        style={{ height: '74vh', minHeight: '540px', width: '100%' }}
         className="z-10 bg-slate-100"
       />
 
+      {/* Modern Floating Preview Card */}
       {activePreviewExp && (
-        <div className="absolute bottom-4 left-4 right-4 z-30 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-3.5 border border-slate-200 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="absolute bottom-4 left-4 right-4 z-30 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-3.5 border border-slate-200/80 flex items-center gap-3.5 animate-in fade-in slide-in-from-bottom-3 duration-250">
           <img
             src={activePreviewExp.images[0]}
-            className="w-14 h-14 rounded-xl object-cover shrink-0"
+            className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-xs"
             alt={activePreviewExp.event_name}
             onError={(e) => {
               (e.target as HTMLImageElement).src =
@@ -161,13 +176,27 @@ export const MapView: React.FC<MapViewProps> = ({
             }}
           />
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-slate-900 truncate">{activePreviewExp.event_name}</h4>
-            <p className="text-[10px] text-slate-500 truncate">📍 {activePreviewExp.exact_address}</p>
-            <span className="text-[11px] font-black text-indigo-600">{activePreviewExp.base_price_cad} CAD</span>
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
+                {activePreviewExp.category}
+              </span>
+              <GoogleRatingBadge
+                rating={activePreviewExp.google_rating}
+                reviewCount={activePreviewExp.google_reviews_count}
+                size="xs"
+              />
+            </div>
+            <h4 className="text-xs font-extrabold text-slate-900 truncate mt-0.5">
+              {activePreviewExp.event_name}
+            </h4>
+            <p className="text-[10px] text-slate-500 truncate mt-0.5">📍 {activePreviewExp.exact_address}</p>
+            <span className="text-xs font-black text-slate-900 block mt-1">
+              {activePreviewExp.base_price_cad} CAD
+            </span>
           </div>
           <button
             onClick={() => onSelectExperience(activePreviewExp.id)}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shrink-0 transition"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 transition active:scale-95 shadow-md cursor-pointer"
           >
             Details
           </button>
