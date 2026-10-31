@@ -454,7 +454,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   });
 
   return (
-    <div className="flex-1 flex flex-col p-4 sm:p-6 max-w-5xl mx-auto w-full animate-in fade-in duration-200 space-y-6">
+    <div className="flex-1 flex flex-col p-3 sm:p-6 max-w-full md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full animate-in fade-in duration-200 space-y-6">
       {/* Top Admin Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-900 text-white rounded-2xl shadow-lg">
         <div className="flex items-center gap-3">

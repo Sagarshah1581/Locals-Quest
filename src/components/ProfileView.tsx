@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, Experience } from '../types';
+import { GoogleRatingBadge } from './GoogleRatingBadge';
 
 interface ProfileViewProps {
   user: UserProfile | null;
@@ -31,13 +32,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col p-4 sm:p-6 max-w-2xl mx-auto w-full animate-in fade-in duration-200">
+    <div className="flex-1 flex flex-col p-3 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full animate-in fade-in duration-200">
       {/* Page Title */}
-      <div className="mb-6">
+      <div className="mb-6 sm:mb-8 text-center sm:text-left">
         <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
           User Account
         </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
           Explorer Profile
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -47,14 +48,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {!user ? (
         /* Not logged in: Show Google Sign-in / Sign-up */
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm text-center">
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-10 shadow-sm text-center max-w-2xl mx-auto w-full">
           <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner mb-4">
             🧭
           </div>
-          <h2 className="text-xl font-extrabold text-slate-900 mb-2">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">
             Sign In to Locals' Quest
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-6">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
             Access your saved orchards, seasonal festival reminders, and personalized Ontario itineraries across devices.
           </p>
 
@@ -64,7 +65,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={onLoginWithGoogle}
               className="w-full bg-white hover:bg-slate-50 text-slate-800 font-bold py-3 px-4 rounded-2xl border border-slate-300 shadow-sm flex items-center justify-center gap-3 transition active:scale-98 cursor-pointer"
             >
-              {/* Official Google G SVG */}
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
@@ -147,127 +147,136 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {/* Account Benefits */}
           <div className="mt-8 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-sm block mb-1">⭐</span>
+            <div className="p-3.5 bg-slate-50 rounded-2xl">
+              <span className="text-base block mb-1">⭐</span>
               <strong className="text-xs text-slate-800 block">Saved Quests</strong>
-              <p className="text-[10px] text-slate-500 mt-0.5">Collect places to visit later.</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Collect places to visit later.</p>
             </div>
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-sm block mb-1">🔔</span>
+            <div className="p-3.5 bg-slate-50 rounded-2xl">
+              <span className="text-base block mb-1">🔔</span>
               <strong className="text-xs text-slate-800 block">Season Alerts</strong>
-              <p className="text-[10px] text-slate-500 mt-0.5">Harvest and lighting date updates.</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Harvest and lighting date updates.</p>
             </div>
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-sm block mb-1">🎟️</span>
+            <div className="p-3.5 bg-slate-50 rounded-2xl">
+              <span className="text-base block mb-1">🎟️</span>
               <strong className="text-xs text-slate-800 block">Member Perks</strong>
-              <p className="text-[10px] text-slate-500 mt-0.5">Discount codes and off-peak tips.</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Discount codes and off-peak tips.</p>
             </div>
           </div>
         </div>
       ) : (
-        /* Logged In View */
-        <div className="space-y-6">
-          {/* User Card */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.name}
-                    className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-100 shadow-sm"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white font-bold text-2xl flex items-center justify-center shadow-md">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2 justify-center sm:justify-start">
-                    <h2 className="text-xl font-extrabold text-slate-900">{user.name}</h2>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full flex items-center gap-1">
-                      <span>✓</span>
-                      <span>Verified</span>
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 justify-center sm:justify-start">
-                    <span>{user.email}</span>
-                    <span className="text-slate-300">·</span>
-                    <span className="text-indigo-600 font-semibold capitalize">
-                      via {user.provider}
-                    </span>
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Member since {user.memberSince}
-                  </p>
+        /* Logged In View - Responsive Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* User Card (4 cols on desktop) */}
+          <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-4 lg:sticky lg:top-24">
+            <div className="flex items-center gap-4">
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-100 shadow-sm shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white font-bold text-2xl flex items-center justify-center shadow-md shrink-0">
+                  {user.name.charAt(0).toUpperCase()}
                 </div>
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-lg font-extrabold text-slate-900 truncate">{user.name}</h2>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full shrink-0">
+                    ✓
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                <p className="text-[11px] text-indigo-600 font-semibold capitalize mt-0.5">
+                  via {user.provider}
+                </p>
               </div>
-
-              <button
-                onClick={onLogout}
-                className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-bold rounded-xl transition border border-slate-200/70 cursor-pointer"
-              >
-                Sign Out
-              </button>
             </div>
+
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Saved Quests:</span>
+                <strong className="text-slate-900 font-bold">{savedExperiences.length}</strong>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Member Since:</span>
+                <strong className="text-slate-900 font-bold">{user.memberSince}</strong>
+              </div>
+            </div>
+
+            <button
+              onClick={onLogout}
+              className="w-full py-2.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-bold rounded-xl transition border border-slate-200/70 cursor-pointer"
+            >
+              Sign Out
+            </button>
           </div>
 
-          {/* Saved Quests Section */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm">
+          {/* Saved Quests Section (8 cols on desktop) */}
+          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2">
                   <span>★</span>
                   <span>My Saved Experiences</span>
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-slate-400">
                   {savedExperiences.length} experiences bookmarked
                 </p>
               </div>
             </div>
 
             {savedExperiences.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 space-y-2">
-                <span className="text-3xl block">☆</span>
-                <p className="text-xs font-semibold text-slate-600">No saved experiences yet</p>
-                <p className="text-[11px] text-slate-400">
+              <div className="py-12 text-center text-slate-400 space-y-2">
+                <span className="text-4xl block">☆</span>
+                <p className="text-sm font-semibold text-slate-600">No saved experiences yet</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
                   Browse the discovery list and click the star (★) to save quests here!
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {savedExperiences.map((exp) => (
                   <div
                     key={exp.id}
                     onClick={() => onSelectExperience(exp.id)}
-                    className="flex items-center justify-between gap-3 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200/80 transition cursor-pointer"
+                    className="p-3 bg-slate-50 hover:bg-slate-100/90 rounded-2xl border border-slate-200/80 transition cursor-pointer flex gap-3 relative group"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={exp.images[0]}
-                        alt={exp.event_name}
-                        className="w-14 h-14 rounded-xl object-cover shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
-                          {exp.category}
-                        </span>
+                    <img
+                      src={exp.images[0]}
+                      alt={exp.event_name}
+                      className="w-20 h-20 rounded-xl object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider truncate">
+                            {exp.category}
+                          </span>
+                          <GoogleRatingBadge
+                            rating={exp.google_rating}
+                            reviewCount={exp.google_reviews_count}
+                            size="xs"
+                          />
+                        </div>
                         <h4 className="text-xs font-bold text-slate-900 truncate">
                           {exp.event_name}
                         </h4>
-                        <p className="text-[10px] text-slate-400 truncate">📍 {exp.location_region}</p>
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5">📍 {exp.location_region}</p>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-extrabold text-slate-900">{exp.base_price_cad}</span>
-                      <button
-                        onClick={(e) => onRemoveSaved(exp.id, e)}
-                        className="p-1.5 text-slate-400 hover:text-rose-500 text-xs rounded-lg transition"
-                        title="Remove from saved"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 mt-1">
+                        <span className="text-xs font-extrabold text-slate-900">{exp.base_price_cad}</span>
+                        <button
+                          onClick={(e) => onRemoveSaved(exp.id, e)}
+                          className="text-[11px] text-slate-400 hover:text-rose-500 font-bold px-2 py-0.5 rounded transition"
+                          title="Remove from saved"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

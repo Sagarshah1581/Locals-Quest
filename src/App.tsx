@@ -5,8 +5,9 @@ import { migrateLegacyCategory } from './utils/categoryTheme';
 import { Header } from './components/Header';
 import { TabNav } from './components/TabNav';
 import { PromoCarousel } from './components/PromoCarousel';
-import { SearchBarAndFilters } from './components/SearchBarAndFilters';
+import { SearchBarAndFilters, DisplayMode } from './components/SearchBarAndFilters';
 import { RailSection } from './components/RailSection';
+import { ExperienceGridCard } from './components/ExperienceCard';
 import { MapView } from './components/MapView';
 import { DetailView } from './components/DetailView';
 import { FilterModal } from './components/FilterModal';
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
   const [currentBgTheme, setCurrentBgTheme] = useState<BackgroundThemeId>(() =>
     getStoredBackgroundTheme()
   );
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('rails');
 
   useEffect(() => {
     applyTheme(currentTheme, currentBgTheme);
@@ -279,7 +281,7 @@ export const App: React.FC = () => {
     >
       {/* Responsive App Frame */}
       <div
-        className="w-full max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto min-h-screen shadow-xl relative flex flex-col pb-16 md:border-x transition-colors duration-300"
+        className="w-full max-w-full md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto min-h-screen shadow-xl relative flex flex-col pb-16 md:border-x transition-colors duration-300"
         style={{
           backgroundColor: 'var(--bg-surface)',
           borderColor: 'var(--border-theme-custom)',
@@ -320,55 +322,76 @@ export const App: React.FC = () => {
               activeFilterCount={activeFilterCount}
               totalFilteredCount={filteredExperiences.length}
               onResetFilters={handleResetFilters}
+              displayMode={displayMode}
+              onToggleDisplayMode={setDisplayMode}
             />
 
-            {/* 4 Dedicated Horizontal Rails */}
-            {spectaclesItems.length > 0 && (
-              <RailSection
-                title="✨ Spectacles & Vibes"
-                category="Spectacles & Vibes"
-                items={spectaclesItems}
-                onSelect={handleSelectExperience}
-                onFilterCategory={handleQuickCategory}
-                savedIds={savedIds}
-                onToggleSave={toggleSaveQuest}
-              />
-            )}
+            {/* Responsive Discovery View: Curated Rails or Full Grid */}
+            {displayMode === 'grid' ? (
+              <div className="px-3 sm:px-6 my-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {filteredExperiences.map((exp) => (
+                    <ExperienceGridCard
+                      key={exp.id}
+                      experience={exp}
+                      onSelect={handleSelectExperience}
+                      isSaved={savedIds.includes(exp.id)}
+                      onToggleSave={toggleSaveQuest}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* 4 Dedicated Horizontal Rails */}
+                {spectaclesItems.length > 0 && (
+                  <RailSection
+                    title="✨ Spectacles & Vibes"
+                    category="Spectacles & Vibes"
+                    items={spectaclesItems}
+                    onSelect={handleSelectExperience}
+                    onFilterCategory={handleQuickCategory}
+                    savedIds={savedIds}
+                    onToggleSave={toggleSaveQuest}
+                  />
+                )}
 
-            {creatorItems.length > 0 && (
-              <RailSection
-                title="🎨 The Creator Hub"
-                category="The Creator Hub"
-                items={creatorItems}
-                onSelect={handleSelectExperience}
-                onFilterCategory={handleQuickCategory}
-                savedIds={savedIds}
-                onToggleSave={toggleSaveQuest}
-              />
-            )}
+                {creatorItems.length > 0 && (
+                  <RailSection
+                    title="🎨 The Creator Hub"
+                    category="The Creator Hub"
+                    items={creatorItems}
+                    onSelect={handleSelectExperience}
+                    onFilterCategory={handleQuickCategory}
+                    savedIds={savedIds}
+                    onToggleSave={toggleSaveQuest}
+                  />
+                )}
 
-            {questsItems.length > 0 && (
-              <RailSection
-                title="🧭 Quests & Escapes"
-                category="Quests & Escapes"
-                items={questsItems}
-                onSelect={handleSelectExperience}
-                onFilterCategory={handleQuickCategory}
-                savedIds={savedIds}
-                onToggleSave={toggleSaveQuest}
-              />
-            )}
+                {questsItems.length > 0 && (
+                  <RailSection
+                    title="🧭 Quests & Escapes"
+                    category="Quests & Escapes"
+                    items={questsItems}
+                    onSelect={handleSelectExperience}
+                    onFilterCategory={handleQuickCategory}
+                    savedIds={savedIds}
+                    onToggleSave={toggleSaveQuest}
+                  />
+                )}
 
-            {gemsItems.length > 0 && (
-              <RailSection
-                title="💎 Hidden Gems & Views"
-                category="Hidden Gems & Views"
-                items={gemsItems}
-                onSelect={handleSelectExperience}
-                onFilterCategory={handleQuickCategory}
-                savedIds={savedIds}
-                onToggleSave={toggleSaveQuest}
-              />
+                {gemsItems.length > 0 && (
+                  <RailSection
+                    title="💎 Hidden Gems & Views"
+                    category="Hidden Gems & Views"
+                    items={gemsItems}
+                    onSelect={handleSelectExperience}
+                    onFilterCategory={handleQuickCategory}
+                    savedIds={savedIds}
+                    onToggleSave={toggleSaveQuest}
+                  />
+                )}
+              </>
             )}
 
             {/* Empty State when no results match active filters */}
@@ -467,7 +490,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Modern, quiet footer */}
-      <footer className="w-full max-w-xl md:max-w-3xl lg:max-w-5xl mx-auto py-5 px-6 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="w-full max-w-full md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto py-5 px-4 sm:px-6 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© 2026 Locals' Quest · Curated regional adventures & seasonal discoveries</p>
         <div className="flex items-center gap-4 text-xs font-semibold">
           <button onClick={() => handleNavigate('contact')} className="hover:text-slate-700 transition">

@@ -18,7 +18,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerGroupRef = useRef<L.LayerGroup | null>(null);
-  const [activePreviewExp, setActivePreviewExp] = useState<Experience | null>(null);
+  const [activePreviewExp, setActivePreviewExp] = useState<Experience | null>(selectedExperience);
+  const [searchFilter, setSearchFilter] = useState('');
 
   const createTeardropIcon = () => {
     return L.divIcon({
@@ -132,13 +133,25 @@ export const MapView: React.FC<MapViewProps> = ({
     mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
   };
 
+  const handleCardClick = (exp: Experience) => {
+    setActivePreviewExp(exp);
+    mapInstanceRef.current?.setView([exp.lat, exp.lng], 13, { animate: true });
+  };
+
+  const displayedList = experiences.filter((e) =>
+    searchFilter.trim()
+      ? e.event_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+        e.location_region.toLowerCase().includes(searchFilter.toLowerCase())
+      : true
+  );
+
   return (
-    <div className="flex-1 relative flex flex-col w-full" style={{ minHeight: '580px' }}>
+    <div className="flex-1 flex flex-col w-full h-[calc(100vh-130px)] min-h-[580px] relative">
       {/* Top Map Action Bar */}
-      <div className="p-3 bg-white/90 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between z-20 shadow-xs">
+      <div className="p-3 sm:px-6 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between z-20 shadow-2xs shrink-0">
         <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-          <span>Showing {experiences.length} quest locations</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+          <span>Showing {experiences.length} quest locations in Ontario</span>
         </span>
         <button
           onClick={fitAllPins}
@@ -156,52 +169,112 @@ export const MapView: React.FC<MapViewProps> = ({
         </button>
       </div>
 
-      {/* Map Surface */}
-      <div
-        ref={mapContainerRef}
-        style={{ height: '74vh', minHeight: '540px', width: '100%' }}
-        className="z-10 bg-slate-100"
-      />
-
-      {/* Modern Floating Preview Card */}
-      {activePreviewExp && (
-        <div className="absolute bottom-4 left-4 right-4 z-30 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-3.5 border border-slate-200/80 flex items-center gap-3.5 animate-in fade-in slide-in-from-bottom-3 duration-250">
-          <img
-            src={activePreviewExp.images[0]}
-            className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-xs"
-            alt={activePreviewExp.event_name}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200';
-            }}
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
-                {activePreviewExp.category}
-              </span>
-              <GoogleRatingBadge
-                rating={activePreviewExp.google_rating}
-                reviewCount={activePreviewExp.google_reviews_count}
-                size="xs"
-              />
-            </div>
-            <h4 className="text-xs font-extrabold text-slate-900 truncate mt-0.5">
-              {activePreviewExp.event_name}
-            </h4>
-            <p className="text-[10px] text-slate-500 truncate mt-0.5">📍 {activePreviewExp.exact_address}</p>
-            <span className="text-xs font-black text-slate-900 block mt-1">
-              {activePreviewExp.base_price_cad} CAD
-            </span>
+      {/* Main Responsive Body: Split Screen on Tablet/Desktop */}
+      <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+        {/* Left Sidebar (Visible on md/tablet & desktop) */}
+        <div className="hidden md:flex flex-col w-80 lg:w-96 border-r border-slate-200/80 bg-white z-20 shrink-0">
+          <div className="p-3 border-b border-slate-100">
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search map locations..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-slate-900"
+            />
           </div>
-          <button
-            onClick={() => onSelectExperience(activePreviewExp.id)}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 transition active:scale-95 shadow-md cursor-pointer"
-          >
-            Details
-          </button>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+            {displayedList.map((exp) => (
+              <div
+                key={exp.id}
+                onClick={() => handleCardClick(exp)}
+                className={`p-3 rounded-2xl border transition cursor-pointer flex gap-3 ${
+                  activePreviewExp?.id === exp.id
+                    ? 'bg-indigo-50/60 border-indigo-300 ring-1 ring-indigo-200'
+                    : 'bg-white border-slate-200/80 hover:bg-slate-50'
+                }`}
+              >
+                <img
+                  src={exp.images[0]}
+                  alt={exp.event_name}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider truncate">
+                      {exp.category}
+                    </span>
+                    <GoogleRatingBadge
+                      rating={exp.google_rating}
+                      reviewCount={exp.google_reviews_count}
+                      size="xs"
+                    />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 truncate">{exp.event_name}</h4>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">📍 {exp.location_region}</p>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-xs font-extrabold text-slate-900">{exp.base_price_cad}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectExperience(exp.id);
+                      }}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800"
+                    >
+                      Details →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Map Canvas Surface */}
+        <div className="flex-1 relative w-full h-full min-h-[400px]">
+          <div ref={mapContainerRef} className="w-full h-full bg-slate-100 z-10" />
+
+          {/* Floating Mobile Preview Card (Only on mobile < 768px) */}
+          {activePreviewExp && (
+            <div className="md:hidden absolute bottom-4 left-3 right-3 z-30 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-3 border border-slate-200/80 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-200">
+              <img
+                src={activePreviewExp.images[0]}
+                className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-xs"
+                alt={activePreviewExp.event_name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200';
+                }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">
+                    {activePreviewExp.category}
+                  </span>
+                  <GoogleRatingBadge
+                    rating={activePreviewExp.google_rating}
+                    reviewCount={activePreviewExp.google_reviews_count}
+                    size="xs"
+                  />
+                </div>
+                <h4 className="text-xs font-extrabold text-slate-900 truncate mt-0.5">
+                  {activePreviewExp.event_name}
+                </h4>
+                <p className="text-[10px] text-slate-500 truncate mt-0.5">📍 {activePreviewExp.exact_address}</p>
+                <span className="text-xs font-black text-slate-900 block mt-1">
+                  {activePreviewExp.base_price_cad} CAD
+                </span>
+              </div>
+              <button
+                onClick={() => onSelectExperience(activePreviewExp.id)}
+                className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 transition active:scale-95 shadow-md cursor-pointer"
+              >
+                Details
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

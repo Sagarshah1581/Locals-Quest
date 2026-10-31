@@ -329,7 +329,7 @@ Return ONLY a JSON array with this structure:
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (_req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }
